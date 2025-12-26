@@ -1,0 +1,553 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>タスクカレンダー</title>
+  <style>
+    :root {
+      --bg: #f7f8fb;
+      --surface: #ffffff;
+      --text: #1f2933;
+      --muted: #516173;
+      --border: #e2e8f0;
+      --accent: #615dfa;
+      --day-width: 36px;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      font-family: "Noto Sans JP", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: linear-gradient(180deg, #f0f4ff 0%, #fdfbff 60%, #f9fbff 100%);
+      color: var(--text);
+    }
+
+    header {
+      padding: 32px 24px 16px;
+      text-align: center;
+    }
+
+    header h1 {
+      margin: 0;
+      font-size: 28px;
+      letter-spacing: 0.04em;
+    }
+
+    header p {
+      margin: 8px 0 0;
+      color: var(--muted);
+      font-size: 14px;
+    }
+
+    main {
+      max-width: 1200px;
+      margin: 0 auto 64px;
+      padding: 0 16px;
+    }
+
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      box-shadow: 0 10px 40px rgba(0, 0, 0, 0.05);
+      padding: 20px;
+    }
+
+    form {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 12px 16px;
+      align-items: end;
+      margin-bottom: 18px;
+    }
+
+    label {
+      font-size: 13px;
+      color: var(--muted);
+      display: block;
+      margin-bottom: 6px;
+    }
+
+    input[type="text"],
+    input[type="date"],
+    button {
+      width: 100%;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 12px 14px;
+      font-size: 14px;
+      transition: box-shadow 0.2s ease, border-color 0.2s ease;
+    }
+
+    input[type="text"],
+    input[type="date"] {
+      background: #fff;
+    }
+
+    input:focus {
+      outline: none;
+      border-color: #a5b4fc;
+      box-shadow: 0 0 0 3px rgba(97, 93, 250, 0.18);
+    }
+
+    button {
+      background: linear-gradient(135deg, #6b6bff, #5d5de3);
+      color: white;
+      cursor: pointer;
+      font-weight: 600;
+      border: none;
+      letter-spacing: 0.01em;
+    }
+
+    button:hover {
+      box-shadow: 0 8px 18px rgba(97, 93, 250, 0.35);
+      transform: translateY(-1px);
+    }
+
+    .info-text {
+      font-size: 12px;
+      color: var(--muted);
+      margin: 0 0 12px;
+    }
+
+    .calendar-wrap {
+      margin-top: 24px;
+      display: flex;
+      gap: 16px;
+      overflow-x: auto;
+      padding: 6px;
+      scroll-snap-type: x mandatory;
+    }
+
+    .month {
+      min-width: 320px;
+      flex: 1 0 320px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 14px;
+      scroll-snap-align: start;
+      box-shadow: 0 12px 30px rgba(0, 0, 0, 0.05);
+    }
+
+    .month-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 12px;
+      border-bottom: 1px solid var(--border);
+      padding-bottom: 8px;
+    }
+
+    .month-title {
+      font-weight: 700;
+      letter-spacing: 0.04em;
+      color: #1e2a45;
+    }
+
+    .day-grid,
+    .lane-row {
+      display: grid;
+      grid-template-columns: repeat(var(--days), minmax(var(--day-width), 1fr));
+      column-gap: 4px;
+    }
+
+    .day-grid {
+      margin-bottom: 10px;
+      font-size: 12px;
+      color: var(--muted);
+    }
+
+    .day-grid .day-cell {
+      text-align: center;
+      padding: 6px 0;
+      background: #f5f7fb;
+      border-radius: 6px;
+      border: 1px dashed #e3e8f3;
+    }
+
+    .lanes {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .lane-row {
+      min-height: 52px;
+      position: relative;
+      padding: 6px 0;
+      background-image: repeating-linear-gradient(
+        to right,
+        transparent,
+        transparent calc(var(--day-width) + 3px),
+        #f2f4f8 calc(var(--day-width) + 3px),
+        #f2f4f8 calc(var(--day-width) + 4px)
+      );
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding-left: 4px;
+      padding-right: 4px;
+      align-items: center;
+    }
+
+    .task-bar {
+      position: relative;
+      color: #0f172a;
+      font-weight: 700;
+      font-size: 13px;
+      padding: 10px 12px;
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      box-shadow: 0 10px 18px rgba(0, 0, 0, 0.07);
+      overflow: hidden;
+      min-height: 38px;
+      border: 1px solid rgba(0, 0, 0, 0.05);
+    }
+
+    .task-bar small {
+      display: block;
+      color: #0f172a;
+      font-size: 11px;
+      font-weight: 600;
+      opacity: 0.8;
+    }
+
+    .tag {
+      display: inline-block;
+      font-size: 11px;
+      padding: 2px 8px;
+      border-radius: 999px;
+      background: rgba(255, 255, 255, 0.4);
+      border: 1px solid rgba(255, 255, 255, 0.5);
+      font-weight: 700;
+    }
+
+    .empty-state {
+      text-align: center;
+      color: var(--muted);
+      padding: 24px 12px;
+      border: 1px dashed var(--border);
+      border-radius: 14px;
+      background: rgba(255, 255, 255, 0.6);
+    }
+
+    @media (max-width: 700px) {
+      .month {
+        min-width: 280px;
+      }
+      :root {
+        --day-width: 28px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>ご支援のスケジュール確認</h1>
+    <p>タスク名と期間を入力すると、月ごとのカレンダーに自動配置されます。</p>
+  </header>
+  <main>
+    <section class="card">
+      <form id="task-form">
+        <div>
+          <label for="task-name">タスク名</label>
+          <input id="task-name" type="text" placeholder="例：キックオフ" required />
+        </div>
+        <div>
+          <label for="start-date">開始日</label>
+          <input id="start-date" type="date" required />
+        </div>
+        <div>
+          <label for="end-date">終了日</label>
+          <input id="end-date" type="date" required />
+        </div>
+        <button type="submit">カレンダーに追加</button>
+      </form>
+      <p class="info-text" id="info-text">※ 期間が重なった場合は別レーンに配置され、3ヶ月以上の期間でも自動で月を追加します。</p>
+      <div class="calendar-wrap" id="calendar"></div>
+    </section>
+  </main>
+  <script>
+    const taskForm = document.getElementById('task-form');
+    const calendarEl = document.getElementById('calendar');
+    const nameInput = document.getElementById('task-name');
+    const startInput = document.getElementById('start-date');
+    const endInput = document.getElementById('end-date');
+    const infoText = document.getElementById('info-text');
+
+    const MAX_TASKS = 10;
+
+    const colors = [
+      '#fbbf24',
+      '#60a5fa',
+      '#f472b6',
+      '#f87171',
+      '#a78bfa',
+      '#34d399',
+      '#38bdf8',
+      '#facc15',
+      '#fb7185',
+      '#c084fc'
+    ];
+
+    const tasks = [
+      {
+        name: 'キックオフ',
+        start: new Date('2024-07-03'),
+        end: new Date('2024-07-04'),
+        color: colors[0]
+      },
+      {
+        name: '記事校閲依頼',
+        start: new Date('2024-07-10'),
+        end: new Date('2024-07-25'),
+        color: colors[1]
+      },
+      {
+        name: '投稿期間',
+        start: new Date('2024-08-07'),
+        end: new Date('2024-09-05'),
+        color: colors[2]
+      },
+      {
+        name: '週例MTG',
+        start: new Date('2024-07-09'),
+        end: new Date('2024-07-09'),
+        color: colors[3]
+      },
+      {
+        name: '面談',
+        start: new Date('2024-08-22'),
+        end: new Date('2024-08-22'),
+        color: colors[4]
+      }
+    ];
+
+    let colorIndex = tasks.length % colors.length;
+
+    function formatDate(date) {
+      return `${date.getFullYear()}年${date.getMonth() + 1}月${date.getDate()}日`;
+    }
+
+    function startOfMonth(date) {
+      return new Date(date.getFullYear(), date.getMonth(), 1);
+    }
+
+    function endOfMonth(date) {
+      return new Date(date.getFullYear(), date.getMonth() + 1, 0);
+    }
+
+    function addMonths(date, count) {
+      return new Date(date.getFullYear(), date.getMonth() + count, 1);
+    }
+
+    function daysInMonth(date) {
+      return endOfMonth(date).getDate();
+    }
+
+    function diffInDays(start, end) {
+      return Math.round((end - start) / (1000 * 60 * 60 * 24));
+    }
+
+    function monthLabel(date) {
+      return `${date.getFullYear()}年 ${date.getMonth() + 1}月`;
+    }
+
+    function getMonthRange() {
+      if (tasks.length === 0) {
+        const base = startOfMonth(new Date());
+        return [base, addMonths(base, 1), addMonths(base, 2)];
+      }
+
+      const minStart = tasks.reduce((acc, t) => (t.start < acc ? t.start : acc), tasks[0].start);
+      const maxEnd = tasks.reduce((acc, t) => (t.end > acc ? t.end : acc), tasks[0].end);
+
+      let start = startOfMonth(minStart);
+      let end = endOfMonth(maxEnd);
+
+      const months = [];
+      let pointer = start;
+      while (pointer <= end) {
+        months.push(pointer);
+        pointer = addMonths(pointer, 1);
+      }
+
+      while (months.length < 3) {
+        const last = months[months.length - 1];
+        months.push(addMonths(last, 1));
+      }
+
+      return months;
+    }
+
+    function allocateLanes(segments) {
+      const lanes = [];
+      const enriched = [];
+
+      segments.sort((a, b) => a.startDay - b.startDay);
+
+      for (const seg of segments) {
+        let placed = false;
+        for (let i = 0; i < lanes.length; i++) {
+          if (seg.startDay > lanes[i]) {
+            lanes[i] = seg.endDay;
+            enriched.push({ ...seg, lane: i });
+            placed = true;
+            break;
+          }
+        }
+        if (!placed) {
+          lanes.push(seg.endDay);
+          enriched.push({ ...seg, lane: lanes.length - 1 });
+        }
+      }
+
+      return { lanes: lanes.length, items: enriched };
+    }
+
+    function render() {
+      calendarEl.innerHTML = '';
+      const months = getMonthRange();
+
+      if (tasks.length === 0) {
+        const empty = document.createElement('div');
+        empty.className = 'empty-state';
+        empty.textContent = 'まだタスクがありません。フォームから追加してください。';
+        calendarEl.appendChild(empty);
+        return;
+      }
+
+      months.forEach((monthDate) => {
+        const monthContainer = document.createElement('div');
+        monthContainer.className = 'month';
+        monthContainer.style.setProperty('--days', daysInMonth(monthDate));
+
+        const header = document.createElement('div');
+        header.className = 'month-header';
+        const title = document.createElement('div');
+        title.className = 'month-title';
+        title.textContent = monthLabel(monthDate);
+        const subtitle = document.createElement('div');
+        subtitle.style.color = 'var(--muted)';
+        subtitle.style.fontSize = '12px';
+        subtitle.textContent = '期間を横棒で表示';
+        header.append(title, subtitle);
+
+        const dayGrid = document.createElement('div');
+        dayGrid.className = 'day-grid';
+        const totalDays = daysInMonth(monthDate);
+        for (let d = 1; d <= totalDays; d++) {
+          const cell = document.createElement('div');
+          cell.className = 'day-cell';
+          cell.textContent = d;
+          dayGrid.appendChild(cell);
+        }
+
+        const monthStart = startOfMonth(monthDate);
+        const monthEnd = endOfMonth(monthDate);
+        const monthSegments = tasks
+          .map((t) => {
+            const start = t.start > monthStart ? t.start : monthStart;
+            const end = t.end < monthEnd ? t.end : monthEnd;
+            if (start > end) return null;
+            const startDay = diffInDays(monthStart, start) + 1;
+            const endDay = diffInDays(monthStart, end) + 1;
+            return { task: t, startDay, endDay };
+          })
+          .filter(Boolean);
+
+        const { lanes, items } = allocateLanes(monthSegments);
+
+        const lanesContainer = document.createElement('div');
+        lanesContainer.className = 'lanes';
+
+        for (let laneIndex = 0; laneIndex < Math.max(lanes, 1); laneIndex++) {
+          const laneRow = document.createElement('div');
+          laneRow.className = 'lane-row';
+          laneRow.style.setProperty('--days', totalDays);
+          laneRow.style.gridTemplateColumns = `repeat(${totalDays}, minmax(var(--day-width), 1fr))`;
+
+          items
+            .filter((item) => item.lane === laneIndex)
+            .forEach((item) => {
+              const bar = document.createElement('div');
+              bar.className = 'task-bar';
+              bar.style.background = item.task.color;
+              bar.style.gridColumn = `${item.startDay} / ${item.endDay + 1}`;
+              bar.textContent = item.task.name;
+
+              const detail = document.createElement('small');
+              detail.textContent = `${item.startDay}日〜${item.endDay}日`;
+
+              const tag = document.createElement('span');
+              tag.className = 'tag';
+              tag.textContent = `${formatDate(item.task.start)} 〜 ${formatDate(item.task.end)}`;
+
+              bar.appendChild(detail);
+              bar.appendChild(tag);
+              laneRow.appendChild(bar);
+            });
+
+          lanesContainer.appendChild(laneRow);
+        }
+
+        monthContainer.append(header, dayGrid, lanesContainer);
+        calendarEl.appendChild(monthContainer);
+      });
+    }
+
+    function updateInfo() {
+      const remaining = MAX_TASKS - tasks.length;
+      const note = '※ 期間が重なった場合は別レーンに配置され、3ヶ月以上の期間でも自動で月を追加します。';
+      const limit = `（現在${tasks.length}件／最大${MAX_TASKS}件まで追加できます${remaining <= 0 ? '。これ以上は追加できません' : ''}）`;
+      infoText.textContent = `${note} ${limit}`;
+    }
+
+    taskForm.addEventListener('submit', (event) => {
+      event.preventDefault();
+      const name = nameInput.value.trim();
+      const startVal = startInput.value;
+      const endVal = endInput.value;
+
+      if (tasks.length >= MAX_TASKS) {
+        alert('タスクは最大10件まで追加できます。不要なタスクはページを再読み込みしてリセットしてください。');
+        return;
+      }
+
+      if (!name || !startVal || !endVal) return;
+
+      const startDate = new Date(`${startVal}T00:00:00`);
+      const endDate = new Date(`${endVal}T00:00:00`);
+
+      if (startDate > endDate) {
+        alert('終了日は開始日以降の日付を指定してください。');
+        return;
+      }
+
+      tasks.push({
+        name,
+        start: startDate,
+        end: endDate,
+        color: colors[colorIndex % colors.length]
+      });
+      colorIndex += 1;
+
+      nameInput.value = '';
+      startInput.value = '';
+      endInput.value = '';
+
+      render();
+      updateInfo();
+    });
+
+    updateInfo();
+    render();
+  </script>
+</body>
+</html>
