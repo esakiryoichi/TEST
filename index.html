@@ -1,0 +1,489 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ご支援のスケジュール確認</title>
+  <style>
+    :root {
+      --header-bg: #6bc2c3;
+      --border-color: #e0e0e0;
+      --text-main: #333;
+      --text-muted: #666;
+      --sun-color: #ef4444;
+      --sat-color: #3b82f6;
+    }
+
+    body {
+      margin: 0;
+      font-family: "Helvetica Neue", Arial, sans-serif;
+      background-color: white;
+      color: var(--text-main);
+      padding: 40px 20px;
+    }
+
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+
+    .main-title {
+      font-size: 24px;
+      font-weight: bold;
+      border-left: 8px solid #f472b6;
+      padding-left: 15px;
+      margin-bottom: 5px;
+    }
+
+    .sub-note {
+      font-size: 12px;
+      color: var(--text-muted);
+      margin-bottom: 30px;
+      line-height: 1.6;
+    }
+
+    .admin-panel {
+      background: #f8fafc;
+      padding: 20px;
+      border-radius: 12px;
+      margin-bottom: 40px;
+      border: 1px solid #e2e8f0;
+    }
+
+    .form-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 15px;
+      align-items: flex-end;
+      margin-bottom: 15px;
+    }
+
+    .form-group {
+      display: flex;
+      flex-direction: column;
+      gap: 5px;
+    }
+
+    label {
+      font-size: 12px;
+      font-weight: bold;
+      color: var(--text-muted);
+    }
+
+    input,
+    select,
+    button {
+      padding: 8px;
+      border: 1px solid #cbd5e1;
+      border-radius: 6px;
+      font-size: 14px;
+    }
+
+    .btn-add {
+      background: #475569;
+      color: white;
+      border: none;
+      cursor: pointer;
+      padding: 10px 20px;
+    }
+
+    .btn-clear {
+      background: #ef4444;
+      color: white;
+      border: none;
+      cursor: pointer;
+      padding: 10px 20px;
+    }
+
+    .calendar-row {
+      display: flex;
+      gap: 20px;
+      overflow-x: auto;
+      padding-bottom: 20px;
+    }
+
+    .month-card {
+      flex: 1;
+      min-width: 350px;
+      border: 1px solid var(--border-color);
+    }
+
+    .month-header {
+      background-color: var(--header-bg);
+      color: white;
+      text-align: center;
+      padding: 5px;
+      font-weight: bold;
+    }
+
+    .month-body {
+      position: relative;
+    }
+
+    .weekday-row {
+      display: grid;
+      grid-template-columns: repeat(7, 1fr);
+    }
+
+    .weekday {
+      text-align: center;
+      padding: 5px 0;
+      font-size: 12px;
+      border-right: 1px solid var(--border-color);
+      border-bottom: 1px solid var(--border-color);
+    }
+
+    .weekday.sun {
+      color: var(--sun-color);
+    }
+
+    .weekday.sat {
+      color: var(--sat-color);
+    }
+
+    .days-wrapper {
+      position: relative;
+    }
+
+    .calendar-grid {
+      display: grid;
+      grid-template-columns: repeat(7, 1fr);
+      grid-auto-rows: 120px;
+    }
+
+    .day-cell {
+      height: 120px;
+      border-right: 1px solid var(--border-color);
+      border-bottom: 1px solid var(--border-color);
+      position: relative;
+    }
+
+    .day-num {
+      font-size: 11px;
+      padding: 4px;
+      color: var(--text-muted);
+    }
+
+    .task-layer {
+      position: absolute;
+      inset: 0;
+      display: grid;
+      grid-template-columns: repeat(7, 1fr);
+      grid-auto-rows: 120px;
+      pointer-events: none;
+      z-index: 5;
+    }
+
+    .task-item {
+      position: relative;
+      pointer-events: auto;
+    }
+
+    .task-segment,
+    .task-circle {
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+      font-weight: bold;
+    }
+
+    .task-segment {
+      height: 24px;
+      font-size: 11px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 12px;
+      margin: 0 2px;
+      white-space: nowrap;
+      overflow: hidden;
+    }
+
+    .task-circle {
+      width: 48px;
+      height: 48px;
+      border-radius: 50%;
+      font-size: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      margin: 0 auto;
+      line-height: 1.2;
+    }
+
+    .del-btn {
+      position: absolute;
+      right: -5px;
+      top: -5px;
+      width: 16px;
+      height: 16px;
+      background: #333;
+      color: white;
+      border-radius: 50%;
+      font-size: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      border: 1px solid white;
+      z-index: 20;
+      visibility: hidden;
+    }
+
+    .task-item:hover .del-btn {
+      visibility: visible;
+    }
+
+    .task-circle + .del-btn {
+      right: 5px;
+      top: 0;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="main-title">ご支援のスケジュール確認 <span>－ 3ヵ月 －</span></div>
+    <p class="sub-note">※ 画像のデザインを再現し、開始月の変更と個別削除を可能にしました。</p>
+
+    <div class="admin-panel">
+      <div class="form-row" style="border-bottom: 1px solid #e2e8f0; padding-bottom: 15px; margin-bottom: 20px;">
+        <div class="form-group">
+          <label>表示開始月</label>
+          <input id="display-start-month" type="month" value="2025-11" onchange="renderCalendar()" />
+        </div>
+        <div class="form-group">
+          <label>一括操作</label>
+          <button type="button" class="btn-clear" onclick="clearTasks()">全クリア</button>
+        </div>
+      </div>
+
+      <form id="task-form">
+        <div class="form-row">
+          <div class="form-group"><label>内容</label><input id="task-name" type="text" placeholder="例：キックオフ" required /></div>
+          <div class="form-group"><label>形式</label><select id="task-type"><option value="bar">バー（期間）</option><option value="circle">円形（単発）</option></select></div>
+          <div class="form-group"><label>色</label><select id="task-color"><option value="#bae6fd">ブルー</option><option value="#fbcfe8">ピンク</option><option value="#fef08a">イエロー</option><option value="#fca5a5">レッド</option><option value="#99f6e4">ティール</option></select></div>
+          <div class="form-group"><label>開始日</label><input id="start-date" type="date" required /></div>
+          <div class="form-group"><label>終了日（バーのみ）</label><input id="end-date" type="date" /></div>
+          <button type="submit" class="btn-add">タスクを追加</button>
+        </div>
+      </form>
+    </div>
+
+    <div class="calendar-row" id="calendar-container"></div>
+  </div>
+
+  <script>
+    const DAY_MS = 86400000;
+    const BASE_OFFSET = 26;
+    const TRACK_HEIGHT = 30;
+
+    let tasks = JSON.parse(localStorage.getItem('calendarTasks')) || [
+      { id: 1, name: 'キックオフ', type: 'bar', start: '2025-11-04', end: '2025-11-13', color: '#bae6fd' },
+      { id: 2, name: '対面MTG', type: 'circle', start: '2025-11-03', end: '2025-11-03', color: '#99f6e4' }
+    ];
+
+    function renderCalendar() {
+      const container = document.getElementById('calendar-container');
+      container.innerHTML = '';
+
+      const startVal = document.getElementById('display-start-month').value;
+      const [year, month] = startVal.split('-').map(Number);
+      const startMonthDate = new Date(year, month - 1, 1);
+
+      for (let i = 0; i < 3; i++) {
+        const currentMonth = new Date(startMonthDate.getFullYear(), startMonthDate.getMonth() + i, 1);
+        container.appendChild(createMonthElement(currentMonth));
+      }
+      saveTasks();
+    }
+
+    function createMonthElement(date) {
+      const y = date.getFullYear();
+      const m = date.getMonth() + 1;
+      const firstDay = new Date(y, m - 1, 1).getDay();
+      const daysInMonth = new Date(y, m, 0).getDate();
+      const rows = Math.ceil((firstDay + daysInMonth) / 7);
+
+      const monthWrap = document.createElement('div');
+      monthWrap.className = 'month-card';
+
+      const header = document.createElement('div');
+      header.className = 'month-header';
+      header.textContent = `${y}年${m}月`;
+      monthWrap.appendChild(header);
+
+      const body = document.createElement('div');
+      body.className = 'month-body';
+
+      const weekdays = document.createElement('div');
+      weekdays.className = 'weekday-row';
+      ['日', '月', '火', '水', '木', '金', '土'].forEach((day, idx) => {
+        const div = document.createElement('div');
+        div.className = `weekday ${idx === 0 ? 'sun' : idx === 6 ? 'sat' : ''}`;
+        div.textContent = day;
+        weekdays.appendChild(div);
+      });
+
+      const daysWrapper = document.createElement('div');
+      daysWrapper.className = 'days-wrapper';
+
+      const grid = document.createElement('div');
+      grid.className = 'calendar-grid';
+
+      for (let i = 0; i < firstDay; i++) {
+        grid.appendChild(createCell());
+      }
+
+      for (let d = 1; d <= daysInMonth; d++) {
+        const cell = createCell(d, y, m);
+        grid.appendChild(cell);
+      }
+
+      const layer = document.createElement('div');
+      layer.className = 'task-layer';
+      layer.id = `task-layer-${y}-${m}`;
+      layer.style.gridTemplateRows = `repeat(${rows}, 120px)`;
+
+      daysWrapper.appendChild(grid);
+      daysWrapper.appendChild(layer);
+      body.appendChild(weekdays);
+      body.appendChild(daysWrapper);
+      monthWrap.appendChild(body);
+
+      setTimeout(() => placeTasksInMonth(date), 0);
+      return monthWrap;
+    }
+
+    function createCell(dayNum, y, m) {
+      const cell = document.createElement('div');
+      cell.className = 'day-cell';
+      if (dayNum) {
+        cell.innerHTML = `<div class="day-num">${dayNum}</div>`;
+        const area = document.createElement('div');
+        area.className = 'task-container';
+        area.id = `tasks-${y}-${m}-${dayNum}`;
+        cell.appendChild(area);
+      }
+      return cell;
+    }
+
+    function dateToGridPosition(day, firstDay) {
+      const index = firstDay + (day - 1);
+      return {
+        row: Math.floor(index / 7) + 1,
+        col: (index % 7) + 1
+      };
+    }
+
+    function getTrack(rowTracks, row, colStart, colEnd) {
+      if (!rowTracks[row]) rowTracks[row] = [];
+      const tracks = rowTracks[row];
+      for (let i = 0; i < tracks.length; i++) {
+        const overlaps = tracks[i].some(seg => !(colEnd < seg.start || colStart > seg.end));
+        if (!overlaps) {
+          tracks[i].push({ start: colStart, end: colEnd });
+          return i;
+        }
+      }
+      tracks.push([{ start: colStart, end: colEnd }]);
+      return tracks.length - 1;
+    }
+
+    function placeTasksInMonth(monthDate) {
+      const y = monthDate.getFullYear();
+      const m = monthDate.getMonth() + 1;
+      const firstDay = new Date(y, m - 1, 1).getDay();
+      const daysInMonth = new Date(y, m, 0).getDate();
+      const monthStart = new Date(y, m - 1, 1);
+      const monthEnd = new Date(y, m - 1, daysInMonth);
+      const layer = document.getElementById(`task-layer-${y}-${m}`);
+      if (!layer) return;
+      layer.innerHTML = '';
+
+      const rowTracks = {};
+
+      tasks.forEach(task => {
+        const tStart = new Date(task.start);
+        const tEnd = task.type === 'circle' ? new Date(task.start) : new Date(task.end || task.start);
+        if (tEnd < monthStart || tStart > monthEnd) return;
+
+        const overlapStart = tStart < monthStart ? new Date(monthStart) : new Date(tStart);
+        const overlapEnd = tEnd > monthEnd ? new Date(monthEnd) : new Date(tEnd);
+        let current = new Date(overlapStart);
+
+        while (current <= overlapEnd) {
+          const { row, col } = dateToGridPosition(current.getDate(), firstDay);
+          const remainingDays = Math.floor((overlapEnd - current) / DAY_MS) + 1;
+          const span = Math.min(remainingDays, 7 - (col - 1));
+          const colStart = col;
+          const colEnd = colStart + span - 1;
+          const track = getTrack(rowTracks, row, colStart, colEnd);
+
+          const wrapper = document.createElement('div');
+          wrapper.className = 'task-item';
+          wrapper.style.gridColumn = `${colStart} / span ${span}`;
+          wrapper.style.gridRow = row;
+          wrapper.style.marginTop = `${BASE_OFFSET + TRACK_HEIGHT * track}px`;
+
+          const visual = document.createElement('div');
+          if (task.type === 'circle') {
+            visual.className = 'task-circle';
+            visual.style.backgroundColor = task.color;
+            visual.innerHTML = task.name.split('').join('<br>');
+          } else {
+            visual.className = 'task-segment';
+            visual.style.backgroundColor = task.color;
+            visual.textContent = task.name;
+          }
+
+          const del = document.createElement('div');
+          del.className = 'del-btn';
+          del.innerHTML = '×';
+          del.onclick = (e) => { e.stopPropagation(); deleteTask(task.id); };
+
+          wrapper.appendChild(visual);
+          wrapper.appendChild(del);
+          layer.appendChild(wrapper);
+
+          current.setDate(current.getDate() + span);
+        }
+      });
+    }
+
+    function deleteTask(id) {
+      if (confirm('このタスクを削除しますか？')) {
+        tasks = tasks.filter(t => t.id !== id);
+        renderCalendar();
+      }
+    }
+
+    function clearTasks() {
+      if (confirm('全てのタスクを完全にリセットしますか？')) {
+        tasks = [];
+        renderCalendar();
+      }
+    }
+
+    function saveTasks() {
+      localStorage.setItem('calendarTasks', JSON.stringify(tasks));
+    }
+
+    document.getElementById('task-form').onsubmit = (e) => {
+      e.preventDefault();
+      const start = document.getElementById('start-date').value;
+      const end = document.getElementById('end-date').value || start;
+      tasks.push({
+        id: Date.now(),
+        name: document.getElementById('task-name').value,
+        type: document.getElementById('task-type').value,
+        start: start,
+        end: end,
+        color: document.getElementById('task-color').value
+      });
+      renderCalendar();
+      e.target.reset();
+    };
+
+    renderCalendar();
+  </script>
+</body>
+</html>
