@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>助成金計算シミュレーター</title>
+  <style>
+    body {
+      font-family: 'Noto Sans JP', system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      margin: 0;
+      background: #f5f7fa;
+      color: #1f2933;
+    }
+
+    header {
+      background: linear-gradient(135deg, #1d4ed8, #2563eb);
+      color: #fff;
+      padding: 24px;
+      text-align: center;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+    }
+
+    main {
+      max-width: 960px;
+      margin: 24px auto 48px;
+      padding: 0 16px;
+    }
+
+    .card {
+      background: #fff;
+      border-radius: 12px;
+      padding: 24px;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+      margin-bottom: 20px;
+    }
+
+    h1 {
+      margin: 0;
+      font-size: 26px;
+      letter-spacing: 0.05em;
+    }
+
+    h2 {
+      font-size: 20px;
+      margin: 0 0 16px;
+      color: #111827;
+    }
+
+    .input-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      align-items: center;
+      margin-bottom: 12px;
+    }
+
+    label {
+      font-weight: 600;
+    }
+
+    input[type="number"] {
+      width: 120px;
+      padding: 10px 12px;
+      border-radius: 8px;
+      border: 1px solid #cbd5e1;
+      font-size: 16px;
+    }
+
+    .note {
+      color: #6b7280;
+      font-size: 14px;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+      gap: 12px;
+    }
+
+    .pill {
+      display: inline-block;
+      padding: 6px 10px;
+      border-radius: 999px;
+      font-weight: 700;
+      background: #eef2ff;
+      color: #312e81;
+      margin-top: 8px;
+    }
+
+    dl {
+      margin: 0;
+    }
+
+    dt {
+      font-weight: 700;
+      margin-bottom: 4px;
+      color: #111827;
+    }
+
+    dd {
+      margin: 0 0 12px;
+      color: #1f2933;
+    }
+
+    .total {
+      font-size: 24px;
+      font-weight: 800;
+      color: #b91c1c;
+      margin: 0;
+    }
+
+    .formula {
+      background: #f1f5f9;
+      border-radius: 8px;
+      padding: 8px 12px;
+      font-family: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
+      margin-bottom: 8px;
+      border: 1px solid #e2e8f0;
+    }
+
+    @media (max-width: 640px) {
+      input[type="number"] {
+        width: 100%;
+      }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>助成金計算シミュレーター</h1>
+    <p style="margin: 6px 0 0;">人数を入力するだけで、最終的なご負担額を自動計算します（例：40万円/人・助成率75%・研修時給1000円×12時間）。</p>
+  </header>
+
+  <main>
+    <section class="card">
+      <h2>人数入力</h2>
+      <div class="input-row">
+        <label for="participants">受講人数</label>
+        <input type="number" id="participants" min="1" value="3" inputmode="numeric" />
+        <span class="pill">3名以上推奨</span>
+      </div>
+      <p class="note">※ 数字を変更すると計算結果が自動更新されます。</p>
+    </section>
+
+    <section class="card">
+      <h2>計算式</h2>
+      <div class="grid">
+        <div>
+          <dt>助成額（1人あたり）</dt>
+          <dd id="grant-per-person" class="formula"></dd>
+          <dt>研修時給助成（1人あたり）</dt>
+          <dd id="wage-support" class="formula"></dd>
+          <dt>助成合計（1人あたり）</dt>
+          <dd id="support-total" class="formula"></dd>
+        </div>
+        <div>
+          <dt>ご負担額（1人あたり）</dt>
+          <dd id="burden-per-person" class="formula"></dd>
+          <dt>最終ご請求額（人数反映）</dt>
+          <dd id="final-total" class="formula" style="font-weight: 800;"></dd>
+          <p class="total" id="final-highlight"></p>
+        </div>
+      </div>
+    </section>
+
+    <section class="card">
+      <h2>前提条件</h2>
+      <dl>
+        <dt>標準料金</dt>
+        <dd id="base-price"></dd>
+        <dt>助成率</dt>
+        <dd id="grant-rate"></dd>
+        <dt>研修時給 / 時間</dt>
+        <dd id="training-info"></dd>
+      </dl>
+      <p class="note">※ 条件はサンプルとして設定しています。必要に応じて金額や率を変更してください。</p>
+    </section>
+  </main>
+
+  <script>
+    const pricePerPerson = 400000; // 標準料金（1人あたり）
+    const grantRate = 0.75;        // 助成率
+    const trainingHourlyWage = 1000; // 研修時給
+    const trainingHours = 12;        // 研修時間
+
+    const participantsInput = document.getElementById('participants');
+    const grantPerPersonEl = document.getElementById('grant-per-person');
+    const wageSupportEl = document.getElementById('wage-support');
+    const supportTotalEl = document.getElementById('support-total');
+    const burdenPerPersonEl = document.getElementById('burden-per-person');
+    const finalTotalEl = document.getElementById('final-total');
+    const finalHighlightEl = document.getElementById('final-highlight');
+    const basePriceEl = document.getElementById('base-price');
+    const grantRateEl = document.getElementById('grant-rate');
+    const trainingInfoEl = document.getElementById('training-info');
+
+    const formatYen = (value) => value.toLocaleString('ja-JP', { maximumFractionDigits: 0 });
+
+    function renderDefaults() {
+      basePriceEl.textContent = `${formatYen(pricePerPerson)}円 / 人`;
+      grantRateEl.textContent = `${(grantRate * 100).toFixed(0)}%`;
+      trainingInfoEl.textContent = `${formatYen(trainingHourlyWage)}円 × ${trainingHours}時間 = ${formatYen(trainingHourlyWage * trainingHours)}円 / 人`;
+    }
+
+    function updateCalculation() {
+      const participants = Math.max(1, Number(participantsInput.value) || 1);
+      participantsInput.value = participants;
+
+      const grantAmount = pricePerPerson * grantRate;
+      const wageSupport = trainingHourlyWage * trainingHours;
+      const totalSupport = grantAmount + wageSupport;
+      const burdenPerPerson = pricePerPerson - totalSupport;
+      const finalTotal = burdenPerPerson * participants;
+
+      grantPerPersonEl.textContent = `${formatYen(pricePerPerson)}円 × ${(grantRate * 100).toFixed(0)}% = ${formatYen(grantAmount)}円`;
+      wageSupportEl.textContent = `${formatYen(trainingHourlyWage)}円 × ${trainingHours}時間 = ${formatYen(wageSupport)}円`;
+      supportTotalEl.textContent = `${formatYen(grantAmount)}円 + ${formatYen(wageSupport)}円 = ${formatYen(totalSupport)}円 / 人`;
+      burdenPerPersonEl.textContent = `${formatYen(pricePerPerson)}円 - ${formatYen(totalSupport)}円 = ${formatYen(burdenPerPerson)}円 / 人`;
+      finalTotalEl.textContent = `${formatYen(burdenPerPerson)}円 × ${participants}人 = ${formatYen(finalTotal)}円`;
+      finalHighlightEl.textContent = `${formatYen(finalTotal)}円 をご請求予定`;
+    }
+
+    renderDefaults();
+    updateCalculation();
+
+    participantsInput.addEventListener('input', updateCalculation);
+  </script>
+</body>
+</html>
