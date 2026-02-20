@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>見積もり電卓</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <main class="container">
+    <h1>見積もり用 電卓</h1>
+    <p class="lead">お客様と話しながら、金額をすぐに提示するためのシンプルなWEB電卓です。</p>
+
+    <section class="card">
+      <div class="grid">
+        <label>
+          単価（円）
+          <input id="unitPrice" type="number" min="0" step="1" value="5000" />
+        </label>
+
+        <label>
+          数量
+          <input id="quantity" type="number" min="0" step="1" value="1" />
+        </label>
+
+        <label>
+          値引き（円）
+          <input id="discount" type="number" min="0" step="1" value="0" />
+        </label>
+
+        <label>
+          税率（%）
+          <input id="taxRate" type="number" min="0" step="0.1" value="10" />
+        </label>
+      </div>
+
+      <div class="result-area">
+        <p>小計: <strong id="subtotal">¥0</strong></p>
+        <p>税込合計: <strong id="total">¥0</strong></p>
+      </div>
+
+      <div class="actions">
+        <button id="copyTotal" type="button">税込合計をコピー</button>
+        <button id="copyDetail" type="button" class="secondary">内訳付きでコピー</button>
+        <span id="status" aria-live="polite"></span>
+      </div>
+    </section>
+  </main>
+
+  <script src="script.js"></script>
+</body>
+</html>
